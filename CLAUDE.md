@@ -269,3 +269,11 @@ setup.sh                ← original one-shot generator of the whole project (ba
 - Before working on any machine: `git pull`. After finishing: commit + push.
 - New video topic: create a new branch (`git switch -c <topic>`) or a new repo, so the Bermuda video stays intact.
 - When the owner says "save" or "সেভ করো": commit with a clear message and push, then tell them in Bengali what was saved.
+
+### Seed-VC fix (needed after a fresh install)
+New torchaudio versions require `torchcodec` for `torchaudio.save`, which fails with
+"TorchCodec is required for save_with_torchcodec". Fix: patch `~/tools/seed-vc/inference.py`
+to save with soundfile: `.venv/bin/pip install soundfile`, add `import soundfile as sf` at the top, and replace
+`torchaudio.save(<path>, vc_wave.cpu(), sr)` with `sf.write(<path>, vc_wave.squeeze().cpu().numpy(), sr)`.
+Backup is kept as `inference.py.bak`. The warnings "shape mismatch" and "sampling_rate" are harmless.
+Do not re-run with FRESH=1 after a successful conversion, or the converted file becomes the new "original".
