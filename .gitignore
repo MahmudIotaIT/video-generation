@@ -1,0 +1,14 @@
+# dependencies & build output (re-created on any machine)
+node_modules/
+out/
+.vc/
+.tmp/
+
+# secrets — never commit API keys
+.env
+.env.*
+
+# temp / system files
+test.mp3
+*.log
+.DS_Store
