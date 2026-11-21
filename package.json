@@ -1,17 +1,19 @@
 {
-  "name": "bermuda-triangle-short",
+  "name": "dhaka-jam-short",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "remotion studio src/index.ts",
-    "sfx": "bash scripts/generate-sfx.sh",
+    "sfx": "tsx scripts/generate-sfx-jam.ts",
     "export-text": "tsx scripts/export-narration.ts",
     "voice": "bash scripts/generate-voice.sh",
     "srt": "tsx scripts/make-srt.ts",
     "audio": "npm run sfx && npm run voice",
-    "still": "remotion still src/index.ts BermudaTriangle out/preview.png --frame=330",
+    "still": "remotion still src/index.ts DhakaJam out/preview.png --frame=150",
     "render": "bash scripts/render.sh",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "eleven": "tsx scripts/elevenlabs-dialogue.ts",
+    "speaker-srt": "tsx scripts/export-speaker-srt.ts"
   },
   "dependencies": {
     "@remotion/cli": "^4.0.0",

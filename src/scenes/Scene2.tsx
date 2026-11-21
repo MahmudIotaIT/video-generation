@@ -1,97 +1,62 @@
 import React from 'react';
-import {AbsoluteFill, Easing, interpolate, useCurrentFrame} from 'remotion';
-import {SceneShell, Vignette} from '../components/SceneShell';
-import {MAP_H, MapView, PTS} from '../components/MapView';
-import {Badge} from '../components/Overlays';
-import {CLAMP, ramp} from '../lib/anim';
-import {cueEnd, cueStart} from '../data/fx';
-import {FONT, H, W} from '../theme';
+import {interpolate, useCurrentFrame} from 'remotion';
+import {SceneShell} from '../components/SceneShell';
+import {LANE, Stage, Street} from '../components/city/Backdrop';
+import {Rickshaw} from '../components/city/Rickshaw';
+import {Bus, Car, Cng} from '../components/city/Vehicles';
+import {Burst, ClockBadge, ThoughtBubble} from '../components/city/Props';
+import {CLAMP, camera, ease} from '../lib/anim';
+import {cueEnd, cueStart, hitsFor, isTalking} from '../data/fx';
 import type {SceneTiming} from '../timeline';
 
-const MAP_TOP = 330;
-
-const Globe: React.FC<{f: number}> = ({f}) => {
-  const r = 300;
-  const rot = f * 0.04;
-  const pulse = 0.5 + 0.5 * Math.sin(f / 5);
-  return (
-    <g>
-      <defs>
-        <radialGradient id="globeG" cx="40%" cy="35%" r="75%">
-          <stop offset="0%" stopColor="#3fa9f5" />
-          <stop offset="100%" stopColor="#0a2a5c" />
-        </radialGradient>
-        <clipPath id="globeClip"><circle r={r} /></clipPath>
-      </defs>
-      <circle r={r + 22} fill="rgba(80,190,255,0.15)" />
-      <circle r={r} fill="url(#globeG)" />
-      <g clipPath="url(#globeClip)">
-        <path d="M -230 -190 C -140 -240, -40 -210, -30 -140 C -20 -90, -90 -70, -110 -20 C -130 20, -170 -40, -240 -80 Z" fill="#d9c79a" />
-        <path d="M -60 20 C 0 10, 30 60, 10 120 C -10 180, -50 230, -60 280 C -80 200, -110 100, -60 20 Z" fill="#d9c79a" />
-        <path d="M 150 -200 C 210 -210, 260 -150, 250 -80 C 230 -20, 190 40, 200 120 C 150 60, 130 -40, 150 -200 Z" fill="#d9c79a" />
-        {Array.from({length: 6}).map((_, k) => (
-          <ellipse key={k} rx={r * Math.abs(Math.cos(rot + (k * Math.PI) / 6))} ry={r} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth={2} />
-        ))}
-        {[-60, -30, 0, 30, 60].map((la) => {
-          const y = -r * Math.sin((la * Math.PI) / 180);
-          const w = r * Math.cos((la * Math.PI) / 180);
-          return <ellipse key={la} cy={y} rx={w} ry={w * 0.1} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={2} />;
-        })}
-      </g>
-      <circle cx={-10} cy={-70} r={16 + pulse * 18} fill="rgba(56,232,255,0.3)" />
-      <circle cx={-10} cy={-70} r={12} fill="#38e8ff" />
-      <text x={-10} y={-120} textAnchor="middle" fontFamily={FONT} fontWeight={700} fontSize={36} fill="#fff" stroke="rgba(0,0,0,0.7)" strokeWidth={8} paintOrder="stroke">
-        উত্তর আটলান্টিক
-      </text>
-    </g>
-  );
-};
-
+/** Stuck between two buses: "সামনে বাস, পিছনে বাস, ডাইনে প্রাইভেট কার… আমি কি উড়াল দিমু?" */
 export const Scene2: React.FC<{t: SceneTiming}> = ({t}) => {
   const f = useCurrentFrame();
   const d = t.duration;
-  const back = Easing.out(Easing.back(1.6));
-  const globeScale = interpolate(f, [0, 30, 58], [0.7, 1, 2.8], CLAMP);
-  const globeOp = 1 - ramp(f, 36, 58);
-  const mapIn = ramp(f, 34, 60);
-  const p2s = cueStart(t, 2);
-  const p2e = cueEnd(t, 2);
-  const pins = [p2s, p2s + (p2e - p2s) * 0.35, p2s + (p2e - p2s) * 0.7].map((s) => ramp(f, s, s + 14, 0, 1, back));
-  const triStart = cueStart(t, 3);
-  const triEnd = cueStart(t, 4) + 12;
-  const tri = ramp(f, triStart, triEnd);
-  const triFill = ramp(f, triEnd - 6, triEnd + 20);
-  const {bermuda: B, miami: M, sanjuan: S} = PTS;
-  const cx = (B[0] + M[0] + S[0]) / 3;
-  const cy = (B[1] + M[1] + S[1]) / 3 + MAP_TOP;
-  const zoom = ramp(f, triStart, d, 0, 1);
-  const camScale = interpolate(f, [40, d], [1.0, 1.12], CLAMP) + zoom * 0.04;
-  const camX = (W / 2 - cx) * zoom * 0.9;
-  const camY = (H / 2 - cy) * zoom * 0.9;
+  const hits = hitsFor(t);
+  const [c0, c1, c2, c3] = [0, 1, 2, 3].map((i) => cueStart(t, i));
+  const rTalk = isTalking(t, f, 'rumana');
+  const kTalk = isTalking(t, f, 'karim');
+
+  const carX = interpolate(f, [c2 - 20, c2 + 12], [1500, 760], {...CLAMP, easing: ease});
+  const cam = camera(f, [
+    {f: 0, x: 540, y: 820, s: 1.3},
+    {f: c1 - 4, x: 540, y: 900, s: 1.0},
+    {f: c1 + 18, x: 760, y: 900, s: 1.05},
+    {f: c1 + 40, x: 330, y: 900, s: 1.05},
+    {f: c2 + 4, x: 600, y: 1130, s: 0.98},
+    {f: c3 - 2, x: 600, y: 1100, s: 0.98},
+    {f: c3 + 14, x: 600, y: 760, s: 1.0},
+    {f: d, x: 600, y: 740, s: 1.06},
+  ]);
+  const kPose = f >= c1 && f < cueEnd(t, 1) ? 'shrug' : f >= c3 ? 'shrug' : 'ride';
 
   return (
-    <SceneShell t={t} scale={camScale} x={camX} y={camY} overlay={
-      <>
-        <Badge kicker="অবস্থান" text="উত্তর আটলান্টিক মহাসাগর" appearAt={45} top={150} tone="info" until={triEnd + 4} />
-        <Badge kicker="জেনে রাখুন" text="এই ত্রিভুজের কোনো সরকারি সীমানা নেই" appearAt={triEnd + 12} top={150} tone="info" size={38} />
-      </>
-    }>
-      <AbsoluteFill style={{background: 'radial-gradient(circle at 50% 40%, #0e3566 0%, #04122a 75%)'}} />
-      <AbsoluteFill style={{opacity: mapIn, transform: `scale(${0.85 + 0.15 * mapIn})`}}>
-        <div style={{position: 'absolute', top: MAP_TOP, left: 0, width: W, height: MAP_H}}>
-          <MapView pins={pins} tri={tri} triFill={triFill} oceanLabel={ramp(f, cueStart(t, 0), cueStart(t, 0) + 15)} />
-        </div>
-      </AbsoluteFill>
-      {globeOp > 0 && (
-        <AbsoluteFill style={{opacity: globeOp}}>
-          <svg width={W} height={H}>
-            <g transform={`translate(${W / 2},${880}) scale(${globeScale})`}>
-              <Globe f={f} />
-            </g>
-          </svg>
-        </AbsoluteFill>
-      )}
-      <Vignette strength={0.55} />
+    <SceneShell t={t} vignette={0.3} {...cam} overlay={<ClockBadge minutes={8 * 60 + 41 + interpolate(f, [0, d], [0, 3], CLAMP)} label="সকাল" />}>
+      <Stage>
+        <Street id="s2" sky={['#79c7f7', '#b7e1ff', '#ffe9c9']} sun={{x: 260, y: 230}} />
+        <Cng x={interpolate(f, [0, d], [260, 330])} y={1110} scale={0.6} roll={f * 2} />
+        <Car x={interpolate(f, [0, d], [820, 860])} y={1115} scale={0.6} color="#f2c14e" roll={f} />
+        <Bus x={-240} y={LANE - 16} scale={0.8} color="#d23c3c" stripe="#ffffff" route="গুলিস্তান — মিরপুর" seed="b2r" shake={hits.busHorn.some((h) => f >= h && f < h + 18) ? 1 : 0} />
+        <Bus x={1330} y={LANE - 16} scale={0.8} seed="b2f" shake={hits.busHorn.some((h) => f >= h && f < h + 18) ? 1 : 0} />
+        <Rickshaw
+          idPrefix="s2r" x={545} y={LANE} scale={0.92} pedal={1}
+          karim={{mood: f >= c3 ? 'smug' : f >= c1 ? 'calm' : 'calm', talking: kTalk, pose: kPose, look: f >= c1 ? -1 : 0}}
+          rumana={{mood: 'hurry', talking: rTalk, pose: f < cueEnd(t, 0) + 6 ? 'hands' : 'sit', look: 1, fx: f >= c0 ? 'sweat' : null}}
+        />
+        <Car x={carX} y={1730} scale={1.15} color="#3a6fd0" shake={hits.carHorn.some((h) => f >= h && f < h + 10) ? 1 : 0} />
+        {hits.busHorn.map((h, k) => <Burst key={`bh${h}`} x={k % 2 ? 160 : 930} y={k % 2 ? 860 : 820} text="প্যাঁ-পোঁ!" at={h} size={46} rot={k % 2 ? -10 : 10} />)}
+        {hits.carHorn.map((h, k) => <Burst key={`ch${h}`} x={900} y={1380 - k * 40} text="পিপ!" at={h} size={44} color="#7fd3ff" />)}
+        <ThoughtBubble x={720} y={300} tail={[720, 640]} w={520} h={330} at={c3 - 2} until={d - 2}>
+          <g transform={`translate(10,${110 + Math.sin(f / 5) * 12}) rotate(-8)`}>
+            <Rickshaw idPrefix="s2w" x={0} y={0} scale={0.3} wings={1} roll={f * 6} pedal={f * 0.3} karim={{mood: 'happy', talking: false}} rumana={{mood: 'happy', talking: false}} />
+          </g>
+          {[[-170, -70], [160, -90], [-120, 60]].map(([sx, sy], i) => (
+            <path key={i} d="M 0 -14 L 4 -4 L 14 0 L 4 4 L 0 14 L -4 4 L -14 0 L -4 -4 Z" fill="#ffd35a" transform={`translate(${sx},${sy}) scale(${1 + 0.3 * Math.sin(f / 4 + i)})`} />
+          ))}
+        </ThoughtBubble>
+        {hits.boing.map((h) => <Burst key={`bo${h}`} x={330} y={330} text="উড়াল?!" at={h} size={40} color="#ff7eb6" />)}
+      </Stage>
     </SceneShell>
   );
 };

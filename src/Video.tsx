@@ -16,7 +16,7 @@ export type VideoProps = {timeline: Timeline; assets: Record<string, boolean>};
 
 const SCENE_COMPONENTS: React.FC<{t: SceneTiming}>[] = [Scene1, Scene2, Scene3, Scene4, Scene5, Scene6];
 
-export const BermudaVideo: React.FC<VideoProps> = ({timeline, assets}) => (
+export const JamVideo: React.FC<VideoProps> = ({timeline, assets}) => (
   <AbsoluteFill style={{backgroundColor: '#000', fontFamily: FONT}}>
     {timeline.scenes.map((s, i) => {
       const C = SCENE_COMPONENTS[i];

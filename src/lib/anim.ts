@@ -60,3 +60,16 @@ export function pointOnPolyline(pts: [number, number][], t: number): [number, nu
   }
   return pts[pts.length - 1];
 }
+
+/** Camera keyframe: look at world point (x,y) with zoom s. */
+export type Cam = {f: number; x: number; y: number; s: number};
+
+/** Interpolates camera keyframes → SceneShell props {x, y, scale}. Frames are made strictly increasing. */
+export const camera = (frame: number, keys: Cam[], cx = 540, cy = 960) => {
+  const fs = mono(keys.map((k) => k.f));
+  const pick = (sel: (k: Cam) => number) => (keys.length === 1 ? sel(keys[0]) : interpolate(frame, fs, keys.map(sel), {...CLAMP, easing: ease}));
+  const s = pick((k) => k.s);
+  const px = pick((k) => k.x);
+  const py = pick((k) => k.y);
+  return {scale: s, x: -(px - cx) * s, y: -(py - cy) * s};
+};

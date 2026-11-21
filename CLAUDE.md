@@ -277,3 +277,17 @@ to save with soundfile: `.venv/bin/pip install soundfile`, add `import soundfile
 `torchaudio.save(<path>, vc_wave.cpu(), sr)` with `sf.write(<path>, vc_wave.squeeze().cpu().numpy(), sr)`.
 Backup is kept as `inference.py.bak`. The warnings "shape mismatch" and "sampling_rate" are harmless.
 Do not re-run with FRESH=1 after a successful conversion, or the converted file becomes the new "original".
+
+---
+
+## 14. Branch `dhaka-jam` — funny dialogue cartoon "ঢাকার জ্যামে রিকশা"
+
+- Composition id `DhakaJam`; output `out/dhaka-jam-final.mp4` (~73 s).
+- Dialogue engine: `src/data/script.ts` has `SPEAKERS` (রুমানা আপা = `bn-BD-NabanitaNeural`, করিম মামা = `bn-BD-PradeepNeural`)
+  and per-scene `lines` (`who`, `text`, optional `tts`, `pause` = extra comic beat before the line, scene `leadIn`).
+- `npm run voice` → `scripts/generate-dialogue.ts`: each line in its speaker's voice, joined per scene,
+  writes `public/audio/narration/sceneN.mp3` + `lines.json` (exact line timings → subtitles + mouth sync).
+  Tuning: `VOICE_KARIM`, `RATE_RUMANA`, `PITCH_KARIM`, ... and `ONLY="2 5"`.
+- `npm run sfx` → `scripts/generate-sfx-jam.ts`: original music + horns, bell, boing, phone, sad trombone in `public/audio/jam/`.
+- Art: `src/components/city/` (Backdrop/Street, Characters with moods, Rickshaw, Vehicles, Props). Sound hits: `hitsFor()` in `src/data/fx.ts`.
+- Subtitles show a coloured speaker name tag. `isTalking(t, f, who)` drives mouth animation.

@@ -1,8 +1,8 @@
 import React from 'react';
 import {CalculateMetadataFunction, Composition, staticFile} from 'remotion';
 import {getAudioDurationInSeconds} from '@remotion/media-utils';
-import {BermudaVideo, VideoProps} from './Video';
-import {ALL_ASSETS, FPS, HEIGHT, SCENES, WIDTH, narrationFile} from './data/script';
+import {JamVideo, VideoProps} from './Video';
+import {ALL_ASSETS, FPS, HEIGHT, LINES_FILE, SCENES, WIDTH, narrationFile, type LinesFile} from './data/script';
 import {buildTimeline} from './timeline';
 
 const assetExists = async (p: string) => {
@@ -28,7 +28,15 @@ const calculateMetadata: CalculateMetadataFunction<VideoProps> = async () => {
       }
     }),
   );
-  const timeline = buildTimeline(durations);
+  let lines: LinesFile['scenes'] = [];
+  if (assets[LINES_FILE]) {
+    try {
+      lines = ((await (await fetch(staticFile(LINES_FILE))).json()) as LinesFile).scenes ?? [];
+    } catch {
+      lines = [];
+    }
+  }
+  const timeline = buildTimeline(durations, lines);
   return {durationInFrames: timeline.total, props: {timeline, assets}};
 };
 
@@ -36,8 +44,8 @@ const fallback = buildTimeline([]);
 
 export const RemotionRoot: React.FC = () => (
   <Composition
-    id="BermudaTriangle"
-    component={BermudaVideo}
+    id="DhakaJam"
+    component={JamVideo}
     durationInFrames={fallback.total}
     fps={FPS}
     width={WIDTH}
